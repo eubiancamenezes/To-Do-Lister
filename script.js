@@ -11,27 +11,61 @@ class TodoLister {
         this.render();
     }
 
-    bindEvents() {
-        document.getElementById('task-form').addEventListener('submit', (e) => {
+   bindEvents() {
+    document.getElementById('task-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.addTask();
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            this.setFilter(e.target.dataset.filter);
+        });
+    });
+
+    document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+        this.toggleTheme('dark');
+    });
+
+    document.getElementById('high-contrast-toggle').addEventListener('click', () => {
+        this.toggleTheme('high-contrast');
+    });
+    
+    //  Navegação por teclado completa
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+/ para focar no input
+        if (e.ctrlKey && e.key === '/') {
             e.preventDefault();
-            this.addTask();
-        });
+            document.getElementById('task-input').focus();
+        }
+        
+        // Escape para limpar foco
+        if (e.key === 'Escape') {
+            document.activeElement.blur();
+        }
+        
+        // Navegação entre filtros com Ctrl+setas
+        if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            e.preventDefault();
+            this.navigateFilters(e.key);
+        }
+    });
+}
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.setFilter(e.target.dataset.filter);
-            });
-        });
+//  Método adicional para navegar entre filtros
+navigateFilters(key) {
+    const filters = ['all', 'active', 'completed'];
+    const currentIndex = filters.indexOf(this.currentFilter);
+    let newIndex;
 
-        document.getElementById('dark-mode-toggle').addEventListener('click', () => {
-            this.toggleTheme('dark');
-        });
-
-        document.getElementById('high-contrast-toggle').addEventListener('click', () => {
-            this.toggleTheme('high-contrast');
-        });
+    if (key === 'ArrowLeft') {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : filters.length - 1;
+    } else {
+        newIndex = currentIndex < filters.length - 1 ? currentIndex + 1 : 0;
     }
 
+    this.setFilter(filters[newIndex]);
+}
     addTask() {
         const input = document.getElementById('task-input');
         const text = input.value.trim();
