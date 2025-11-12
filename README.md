@@ -9,7 +9,7 @@ https://img.shields.io/badge/Deploy-GitHub_Pages-success
 
 O To-Do-Lister é uma aplicação web de lista de tarefas desenvolvida com foco em acessibilidade e boas práticas de desenvolvimento. Este projeto foi criado como parte da Entrega IV da disciplina, demonstrando implementação profissional de versionamento, acessibilidade WCAG 2.1 AA e deploy em produção.
 
-🔗 Acesse a aplicação: https://seu-usuario.github.io/To-Do-Lister/
+🔗 Acesse a aplicação: (https://eubiancamenezes.github.io/To-Do-Lister/)
 
 ✨ Funcionalidades
 
@@ -56,14 +56,14 @@ GitHub Pages Deploy automático
 Acesse diretamente pelo GitHub Pages:
 
 ```
-https://seu-usuario.github.io/To-Do-Lister/
+(https://eubiancamenezes.github.io/To-Do-Lister/)
 ```
 
 💻 Localmente
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/To-Do-Lister.git
+git clone https://github.com/eubiancamenezes/To-Do-Lister.git
 
 # 2. Acesse a pasta
 cd To-Do-Lister
@@ -197,9 +197,9 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para detalhes.
 
 👨‍💻 Desenvolvido por
 
-[Seu Nome] - Entrega IV
-Disciplina: [Nome da Disciplina]
-Instituição: [Nome da Instituição]
+Bianca Menezes- Entrega IV
+Disciplina: Desenvolvimento Front-End Para Web - Turma_004
+Instituição: Cruzeiro do Sul Virtual
 
 ---
 
@@ -213,4 +213,4 @@ Instituição: [Nome da Instituição]
 
 ---
 
-Última atualização: ${new Date().toLocaleDateString('pt-BR')}
+Última atualização: 12/11/2025
