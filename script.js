@@ -1,206 +1,188 @@
-class TodoLister {
-    constructor() {
-        this.tasks = JSON.parse(localStorage.getItem('todoTasks')) || [];
-        this.currentFilter = 'all';
-        this.currentTheme = localStorage.getItem('todoTheme') || '';
-        this.init();
+// Variáveis globais
+let currentFilter = 'all';
+
+// Inicializar a aplicação
+document.addEventListener('DOMContentLoaded', function() {
+    loadTasks();
+    updateTaskCount();
+});
+
+// Adicionar nova tarefa
+function addTask() {
+    const taskInput = document.getElementById('taskInput');
+    const taskText = taskInput.value.trim();
+    
+    if (taskText === '') {
+        alert('Por favor, digite uma tarefa!');
+        return;
     }
+    
+    const taskList = document.getElementById('taskList');
+    const li = document.createElement('li');
+    const timestamp = new Date().toLocaleString();
+    
+    li.innerHTML = `
+        <span>${taskText}</span>
+        <small class="task-time">${timestamp}</small>
+        <div class="task-actions">
+            <button class="complete-btn" onclick="toggleComplete(this)">✓</button>
+            <button class="delete-btn" onclick="deleteTask(this)">✕</button>
+        </div>
+    `;
+    
+    taskList.appendChild(li);
+    taskInput.value = '';
+    saveTasks();
+    updateTaskCount();
+    
+    // Aplicar filtro atual
+    applyFilter(li, currentFilter);
+}
 
-    init() {
-        this.applySavedTheme();
-        this.bindEvents();
-        this.render();
-    }
-
-    bindEvents() {
-        // Form submission
-        const form = document.getElementById('task-form');
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.addTask();
-            });
-        }
-
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.setFilter(e.target.dataset.filter);
-            });
-        });
-
-        // Theme controls
-        const themeButtons = document.querySelectorAll('.theme-btn');
-        themeButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.setTheme(e.target.dataset.theme);
-            });
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === '/') {
-                e.preventDefault();
-                this.focusTaskInput();
-            }
-        });
-
-        // Task input events
-        const taskInput = document.getElementById('task-input');
-        if (taskInput) {
-            taskInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.addTask();
-                }
-            });
-        }
-    }
-
-    addTask() {
-        const input = document.getElementById('task-input');
-        const text = input.value.trim();
-
-        if (text) {
-            const newTask = {
-                id: Date.now(),
-                text: text,
-                completed: false,
-                createdAt: new Date().toISOString()
-            };
-
-            this.tasks.unshift(newTask);
-            this.save();
-            this.render();
-            input.value = '';
-            input.focus();
-        }
-    }
-
-    toggleTask(id) {
-        this.tasks = this.tasks.map(task =>
-            task.id === id ? { ...task, completed: !task.completed } : task
-        );
-        this.save();
-        this.render();
-    }
-
-    deleteTask(id) {
-        this.tasks = this.tasks.filter(task => task.id !== id);
-        this.save();
-        this.render();
-    }
-
-    setFilter(filter) {
-        this.currentFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === filter);
-        });
-        this.render();
-    }
-
-    setTheme(theme) {
-        const isSameTheme = this.currentTheme === theme;
-        
-        if (isSameTheme) {
-            document.body.removeAttribute('data-theme');
-            this.currentTheme = '';
-        } else {
-            document.body.setAttribute('data-theme', theme);
-            this.currentTheme = theme;
-        }
-        
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            const isActive = btn.dataset.theme === this.currentTheme;
-            btn.classList.toggle('active', isActive);
-        });
-        
-        localStorage.setItem('todoTheme', this.currentTheme);
-    }
-
-    applySavedTheme() {
-        if (this.currentTheme) {
-            document.body.setAttribute('data-theme', this.currentTheme);
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                const isActive = btn.dataset.theme === this.currentTheme;
-                btn.classList.toggle('active', isActive);
-            });
-        }
-    }
-
-    render() {
-        const taskList = document.getElementById('task-list');
-        const emptyState = document.getElementById('empty-state');
-        
-        if (!taskList) return;
-
-        const filteredTasks = this.getFilteredTasks();
-
-        if (filteredTasks.length === 0) {
-            taskList.innerHTML = '';
-            if (emptyState) emptyState.style.display = 'block';
-            return;
-        }
-
-        if (emptyState) emptyState.style.display = 'none';
-
-        taskList.innerHTML = filteredTasks.map(task => `
-            <li class="task-item ${task.completed ? 'completed' : ''}" 
-                data-task-id="${task.id}">
-                <input 
-                    type="checkbox" 
-                    class="task-checkbox"
-                    ${task.completed ? 'checked' : ''}
-                    onchange="app.toggleTask(${task.id})"
-                    aria-label="${task.completed ? 'Desmarcar' : 'Marcar'} tarefa: ${task.text}"
-                >
-                <span class="task-text">
-                    ${this.escapeHtml(task.text)}
-                </span>
-                <button class="delete-btn" 
-                        onclick="app.deleteTask(${task.id})" 
-                        aria-label="Excluir tarefa: ${task.text}">
-                    ✕
-                </button>
-            </li>
-        `).join('');
-
-        this.updateStats();
-    }
-
-    getFilteredTasks() {
-        switch (this.currentFilter) {
-            case 'active': return this.tasks.filter(t => !t.completed);
-            case 'completed': return this.tasks.filter(t => t.completed);
-            default: return this.tasks;
-        }
-    }
-
-    updateStats() {
-        const counter = document.getElementById('task-counter');
-        if (!counter) return;
-        
-        const remaining = this.tasks.filter(t => !t.completed).length;
-        counter.textContent = `${remaining} tarefa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}`;
-    }
-
-    focusTaskInput() {
-        const input = document.getElementById('task-input');
-        if (input) input.focus();
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    save() {
-        localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+// Adicionar tarefa com Enter
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        addTask();
     }
 }
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', function() {
-    window.app = new TodoLister();
-});
+// Alternar estado de conclusão
+function toggleComplete(button) {
+    const li = button.closest('li');
+    li.classList.toggle('completed');
+    saveTasks();
+    updateTaskCount();
+    
+    // Reaplicar filtro se necessário
+    if (currentFilter !== 'all') {
+        applyFilter(li, currentFilter);
+    }
+}
+
+// Excluir tarefa
+function deleteTask(button) {
+    const li = button.closest('li');
+    li.style.animation = 'fadeOut 0.3s ease';
+    
+    setTimeout(() => {
+        li.remove();
+        saveTasks();
+        updateTaskCount();
+    }, 300);
+}
+
+// Filtrar tarefas
+function filterTasks(filter) {
+    currentFilter = filter;
+    
+    // Atualizar botões de filtro
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Aplicar filtro a todas as tarefas
+    const tasks = document.querySelectorAll('#taskList li');
+    tasks.forEach(task => {
+        applyFilter(task, filter);
+    });
+}
+
+// Aplicar filtro individual
+function applyFilter(task, filter) {
+    const isCompleted = task.classList.contains('completed');
+    
+    switch (filter) {
+        case 'all':
+            task.style.display = 'flex';
+            break;
+        case 'pending':
+            task.style.display = isCompleted ? 'none' : 'flex';
+            break;
+        case 'completed':
+            task.style.display = isCompleted ? 'flex' : 'none';
+            break;
+    }
+}
+
+// Limpar tarefas concluídas
+function clearCompleted() {
+    const completedTasks = document.querySelectorAll('#taskList li.completed');
+    
+    if (completedTasks.length === 0) {
+        alert('Não há tarefas concluídas para limpar!');
+        return;
+    }
+    
+    if (confirm(`Deseja limpar ${completedTasks.length} tarefa(s) concluída(s)?`)) {
+        completedTasks.forEach(task => {
+            task.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => task.remove(), 300);
+        });
+        
+        setTimeout(() => {
+            saveTasks();
+            updateTaskCount();
+        }, 400);
+    }
+}
+
+// Salvar tarefas no localStorage
+function saveTasks() {
+    const tasks = [];
+    document.querySelectorAll('#taskList li').forEach(li => {
+        tasks.push({
+            text: li.querySelector('span').textContent,
+            time: li.querySelector('.task-time')?.textContent || new Date().toLocaleString(),
+            completed: li.classList.contains('completed')
+        });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+// Carregar tarefas do localStorage
+function loadTasks() {
+    const savedTasks = localStorage.getItem('tasks');
+    if (savedTasks) {
+        const tasks = JSON.parse(savedTasks);
+        const taskList = document.getElementById('taskList');
+        
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            if (task.completed) {
+                li.classList.add('completed');
+            }
+            
+            li.innerHTML = `
+                <span>${task.text}</span>
+                <small class="task-time">${task.time}</small>
+                <div class="task-actions">
+                    <button class="complete-btn" onclick="toggleComplete(this)">✓</button>
+                    <button class="delete-btn" onclick="deleteTask(this)">✕</button>
+                </div>
+            `;
+            
+            taskList.appendChild(li);
+        });
+    }
+}
+
+// Atualizar contador de tarefas
+function updateTaskCount() {
+    const totalTasks = document.querySelectorAll('#taskList li').length;
+    const completedTasks = document.querySelectorAll('#taskList li.completed').length;
+    const pendingTasks = totalTasks - completedTasks;
+    
+    const taskCount = document.getElementById('taskCount');
+    taskCount.textContent = `Total: ${totalTasks} | Pendentes: ${pendingTasks} | Concluídas: ${completedTasks}`;
+}
+
+// Adicionar animação de fadeOut
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(-100px); }
+    }
+`;
+document.head.appendChild(style);
