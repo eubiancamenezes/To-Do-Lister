@@ -2,15 +2,18 @@ class TodoLister {
     constructor() {
         this.tasks = JSON.parse(localStorage.getItem('todoTasks')) || [];
         this.currentFilter = 'all';
+        this.currentTheme = localStorage.getItem('todoTheme') || '';
         this.init();
     }
 
     init() {
+        this.applySavedTheme();
         this.bindEvents();
         this.render();
     }
 
     bindEvents() {
+        // Form submission
         const form = document.getElementById('task-form');
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -19,33 +22,39 @@ class TodoLister {
             });
         }
 
+        // Filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.setFilter(e.target.dataset.filter);
             });
         });
 
-        const darkBtn = document.getElementById('dark-mode-toggle');
-        if (darkBtn) {
-            darkBtn.addEventListener('click', () => {
-                this.toggleTheme('dark');
+        // Theme controls
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        themeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setTheme(e.target.dataset.theme);
             });
-        }
+        });
 
-        const contrastBtn = document.getElementById('high-contrast-toggle');
-        if (contrastBtn) {
-            contrastBtn.addEventListener('click', () => {
-                this.toggleTheme('high-contrast');
-            });
-        }
-
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === '/') {
                 e.preventDefault();
-                const input = document.getElementById('task-input');
-                if (input) input.focus();
+                this.focusTaskInput();
             }
         });
+
+        // Task input events
+        const taskInput = document.getElementById('task-input');
+        if (taskInput) {
+            taskInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.addTask();
+                }
+            });
+        }
     }
 
     addTask() {
@@ -53,14 +62,18 @@ class TodoLister {
         const text = input.value.trim();
 
         if (text) {
-            this.tasks.unshift({
+            const newTask = {
                 id: Date.now(),
                 text: text,
-                completed: false
-            });
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+
+            this.tasks.unshift(newTask);
             this.save();
             this.render();
             input.value = '';
+            input.focus();
         }
     }
 
@@ -86,22 +99,67 @@ class TodoLister {
         this.render();
     }
 
+    setTheme(theme) {
+        const isSameTheme = this.currentTheme === theme;
+        
+        if (isSameTheme) {
+            document.body.removeAttribute('data-theme');
+            this.currentTheme = '';
+        } else {
+            document.body.setAttribute('data-theme', theme);
+            this.currentTheme = theme;
+        }
+        
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            const isActive = btn.dataset.theme === this.currentTheme;
+            btn.classList.toggle('active', isActive);
+        });
+        
+        localStorage.setItem('todoTheme', this.currentTheme);
+    }
+
+    applySavedTheme() {
+        if (this.currentTheme) {
+            document.body.setAttribute('data-theme', this.currentTheme);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                const isActive = btn.dataset.theme === this.currentTheme;
+                btn.classList.toggle('active', isActive);
+            });
+        }
+    }
+
     render() {
         const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        
         if (!taskList) return;
 
         const filteredTasks = this.getFilteredTasks();
 
+        if (filteredTasks.length === 0) {
+            taskList.innerHTML = '';
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
         taskList.innerHTML = filteredTasks.map(task => `
-            <li class="task-item ${task.completed ? 'completed' : ''}">
+            <li class="task-item ${task.completed ? 'completed' : ''}" 
+                data-task-id="${task.id}">
                 <input 
                     type="checkbox" 
+                    class="task-checkbox"
                     ${task.completed ? 'checked' : ''}
                     onchange="app.toggleTask(${task.id})"
                     aria-label="${task.completed ? 'Desmarcar' : 'Marcar'} tarefa: ${task.text}"
                 >
-                <span class="task-text">${task.text}</span>
-                <button onclick="app.deleteTask(${task.id})" aria-label="Excluir tarefa: ${task.text}">
+                <span class="task-text">
+                    ${this.escapeHtml(task.text)}
+                </span>
+                <button class="delete-btn" 
+                        onclick="app.deleteTask(${task.id})" 
+                        aria-label="Excluir tarefa: ${task.text}">
                     ✕
                 </button>
             </li>
@@ -126,15 +184,15 @@ class TodoLister {
         counter.textContent = `${remaining} tarefa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}`;
     }
 
-    toggleTheme(theme) {
-        const body = document.body;
-        const isActive = body.getAttribute('data-theme') === theme;
-        body.setAttribute('data-theme', isActive ? '' : theme);
-        
-        const btn = document.getElementById(`${theme}-mode-toggle`);
-        if (btn) {
-            btn.setAttribute('aria-pressed', !isActive);
-        }
+    focusTaskInput() {
+        const input = document.getElementById('task-input');
+        if (input) input.focus();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     save() {
@@ -142,17 +200,7 @@ class TodoLister {
     }
 }
 
-// Inicialização segura
+// Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     window.app = new TodoLister();
-    console.log('✅ To-Do-Lister carregado com sucesso!');
 });
-
-// Fallback para casos onde DOM já está carregado
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        window.app = new TodoLister();
-    });
-} else {
-    window.app = new TodoLister();
-}
