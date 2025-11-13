@@ -1,84 +1,79 @@
-javascript
 class TodoLister {
     constructor() {
         this.tasks = JSON.parse(localStorage.getItem('todoTasks')) || [];
         this.currentFilter = 'all';
+        this.currentTheme = localStorage.getItem('todoTheme') || '';
         this.init();
     }
 
     init() {
+        this.applySavedTheme();
         this.bindEvents();
         this.render();
     }
 
-   bindEvents() {
-    document.getElementById('task-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.addTask();
-    });
+    bindEvents() {
+        // Form submission
+        const form = document.getElementById('task-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addTask();
+            });
+        }
 
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            this.setFilter(e.target.dataset.filter);
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setFilter(e.target.dataset.filter);
+            });
         });
-    });
 
-    document.getElementById('dark-mode-toggle').addEventListener('click', () => {
-        this.toggleTheme('dark');
-    });
+        // Theme controls
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        themeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setTheme(e.target.dataset.theme);
+            });
+        });
 
-    document.getElementById('high-contrast-toggle').addEventListener('click', () => {
-        this.toggleTheme('high-contrast');
-    });
-    
-    //  Navegação por teclado completa
-    document.addEventListener('keydown', (e) => {
-        // Ctrl+/ para focar no input
-        if (e.ctrlKey && e.key === '/') {
-            e.preventDefault();
-            document.getElementById('task-input').focus();
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '/') {
+                e.preventDefault();
+                this.focusTaskInput();
+            }
+        });
+
+        // Task input events
+        const taskInput = document.getElementById('task-input');
+        if (taskInput) {
+            taskInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.addTask();
+                }
+            });
         }
-        
-        // Escape para limpar foco
-        if (e.key === 'Escape') {
-            document.activeElement.blur();
-        }
-        
-        // Navegação entre filtros com Ctrl+setas
-        if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-            e.preventDefault();
-            this.navigateFilters(e.key);
-        }
-    });
-}
-
-//  Método adicional para navegar entre filtros
-navigateFilters(key) {
-    const filters = ['all', 'active', 'completed'];
-    const currentIndex = filters.indexOf(this.currentFilter);
-    let newIndex;
-
-    if (key === 'ArrowLeft') {
-        newIndex = currentIndex > 0 ? currentIndex - 1 : filters.length - 1;
-    } else {
-        newIndex = currentIndex < filters.length - 1 ? currentIndex + 1 : 0;
     }
 
-    this.setFilter(filters[newIndex]);
-}
     addTask() {
         const input = document.getElementById('task-input');
         const text = input.value.trim();
 
         if (text) {
-            this.tasks.unshift({
+            const newTask = {
                 id: Date.now(),
                 text: text,
-                completed: false
-            });
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+
+            this.tasks.unshift(newTask);
             this.save();
             this.render();
             input.value = '';
+            input.focus();
         }
     }
 
@@ -104,20 +99,67 @@ navigateFilters(key) {
         this.render();
     }
 
+    setTheme(theme) {
+        const isSameTheme = this.currentTheme === theme;
+        
+        if (isSameTheme) {
+            document.body.removeAttribute('data-theme');
+            this.currentTheme = '';
+        } else {
+            document.body.setAttribute('data-theme', theme);
+            this.currentTheme = theme;
+        }
+        
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            const isActive = btn.dataset.theme === this.currentTheme;
+            btn.classList.toggle('active', isActive);
+        });
+        
+        localStorage.setItem('todoTheme', this.currentTheme);
+    }
+
+    applySavedTheme() {
+        if (this.currentTheme) {
+            document.body.setAttribute('data-theme', this.currentTheme);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                const isActive = btn.dataset.theme === this.currentTheme;
+                btn.classList.toggle('active', isActive);
+            });
+        }
+    }
+
     render() {
         const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (!taskList) return;
+
         const filteredTasks = this.getFilteredTasks();
 
+        if (filteredTasks.length === 0) {
+            taskList.innerHTML = '';
+            if (emptyState) emptyState.style.display = 'block';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
         taskList.innerHTML = filteredTasks.map(task => `
-            <li class="task-item ${task.completed ? 'completed' : ''}">
+            <li class="task-item ${task.completed ? 'completed' : ''}" 
+                data-task-id="${task.id}">
                 <input 
                     type="checkbox" 
+                    class="task-checkbox"
                     ${task.completed ? 'checked' : ''}
                     onchange="app.toggleTask(${task.id})"
                     aria-label="${task.completed ? 'Desmarcar' : 'Marcar'} tarefa: ${task.text}"
                 >
-                <span class="task-text">${task.text}</span>
-                <button onclick="app.deleteTask(${task.id})" aria-label="Excluir tarefa">
+                <span class="task-text">
+                    ${this.escapeHtml(task.text)}
+                </span>
+                <button class="delete-btn" 
+                        onclick="app.deleteTask(${task.id})" 
+                        aria-label="Excluir tarefa: ${task.text}">
                     ✕
                 </button>
             </li>
@@ -135,18 +177,22 @@ navigateFilters(key) {
     }
 
     updateStats() {
+        const counter = document.getElementById('task-counter');
+        if (!counter) return;
+        
         const remaining = this.tasks.filter(t => !t.completed).length;
-        document.getElementById('task-counter').textContent = 
-            `${remaining} tarefa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}`;
+        counter.textContent = `${remaining} tarefa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}`;
     }
 
-    toggleTheme(theme) {
-        const body = document.body;
-        const isActive = body.getAttribute('data-theme') === theme;
-        body.setAttribute('data-theme', isActive ? '' : theme);
-        
-        const btn = document.getElementById(`${theme}-mode-toggle`);
-        btn.setAttribute('aria-pressed', !isActive);
+    focusTaskInput() {
+        const input = document.getElementById('task-input');
+        if (input) input.focus();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     save() {
@@ -154,5 +200,12 @@ navigateFilters(key) {
     }
 }
 
-const app = new TodoLister();
-window.app = app;
+// Inicialização com verificação de segurança
+document.addEventListener('DOMContentLoaded', function() {
+    window.app = new TodoLister();
+});
+
+// Para evitar conflitos em strict mode
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TodoLister;
+}
