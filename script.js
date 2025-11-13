@@ -200,12 +200,7 @@ class TodoLister {
     }
 }
 
-// Inicialização com verificação de segurança
+// Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     window.app = new TodoLister();
 });
-
-// Para evitar conflitos em strict mode
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TodoLister;
-}
