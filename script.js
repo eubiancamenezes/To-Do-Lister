@@ -1,301 +1,159 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos do DOM
-    const taskInput = document.getElementById('taskInput');
-    const addTaskBtn = document.getElementById('addTaskBtn');
-    const taskList = document.getElementById('taskList');
-    const clearCompletedBtn = document.getElementById('clearCompletedBtn');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    const totalTasksElement = document.getElementById('totalTasks');
-    const completedTasksElement = document.getElementById('completedTasks');
-    
-    // Carregar tarefas do localStorage
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    
-    // Inicializar a aplicação
-    function init() {
-        renderTasks();
-        updateStats();
-        taskInput.focus();
+class TodoApp {
+    constructor() {
+        this.tasks = this.loadTasks();
+        this.currentFilter = 'all';
+        this.init();
     }
-    
-    // Adicionar nova tarefa
-    function addTask() {
-        const taskText = taskInput.value.trim();
+
+    init() {
+        this.bindEvents();
+        this.render();
+    }
+
+    loadTasks() {
+        const saved = localStorage.getItem('todoTasks');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveTasks() {
+        localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
+    }
+
+    bindEvents() {
+        const addButton = document.getElementById('addTaskBtn');
+        const taskInput = document.getElementById('taskInput');
+        const clearButton = document.getElementById('clearCompleted');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        addButton.addEventListener('click', () => this.addTask());
         
-        if (taskText === '') {
-            showAlert('Por favor, digite uma tarefa!', 'warning');
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addTask();
+        });
+
+        clearButton.addEventListener('click', () => this.clearCompleted());
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.setFilter(e.target.dataset.filter);
+            });
+        });
+    }
+
+    addTask() {
+        const input = document.getElementById('taskInput');
+        const text = input.value.trim();
+
+        if (text === '') {
+            alert('Por favor, digite uma tarefa!');
             return;
         }
-        
-        if (taskText.length > 100) {
-            showAlert('A tarefa deve ter no máximo 100 caracteres!', 'warning');
-            return;
-        }
-        
+
         const newTask = {
             id: Date.now(),
-            text: taskText,
+            text: text,
             completed: false,
             createdAt: new Date().toISOString()
         };
-        
-        tasks.unshift(newTask);
-        saveTasks();
-        renderTasks();
-        updateStats();
-        
-        taskInput.value = '';
-        taskInput.focus();
-        
-        showAlert('Tarefa adicionada com sucesso!', 'success');
+
+        this.tasks.push(newTask);
+        input.value = '';
+        this.saveTasks();
+        this.render();
     }
-    
-    // Renderizar lista de tarefas
-    function renderTasks() {
-        taskList.innerHTML = '';
-        
-        if (tasks.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'empty-state';
-            emptyState.innerHTML = `
-                <p>📝 Nenhuma tarefa encontrada</p>
-                <small>Adicione uma tarefa para começar!</small>
-            `;
-            taskList.appendChild(emptyState);
-            return;
-        }
-        
-        tasks.forEach(task => {
-            const li = document.createElement('li');
-            li.className = task.completed ? 'completed' : '';
-            li.setAttribute('data-id', task.id);
-            
-            li.innerHTML = `
-                <div class="task-content">
-                    <span class="task-text">${escapeHtml(task.text)}</span>
-                </div>
-                <div class="task-actions">
-                    <button class="complete-btn" aria-label="${task.completed ? 'Desmarcar' : 'Completar'} tarefa">
-                        ${task.completed ? '↶' : '✓'}
-                    </button>
-                    <button class="delete-btn" aria-label="Excluir tarefa">
-                        ✗
-                    </button>
-                </div>
-            `;
-            
-            // Eventos dos botões
-            const completeBtn = li.querySelector('.complete-btn');
-            const deleteBtn = li.querySelector('.delete-btn');
-            
-            completeBtn.addEventListener('click', () => toggleTask(task.id));
-            deleteBtn.addEventListener('click', () => deleteTask(task.id));
-            
-            // Duplo clique para editar (feature extra)
-            li.addEventListener('dblclick', () => editTask(task.id));
-            
-            taskList.appendChild(li);
-        });
-    }
-    
-    // Alternar estado da tarefa
-    function toggleTask(taskId) {
-        tasks = tasks.map(task => {
-            if (task.id === taskId) {
+
+    toggleTask(id) {
+        this.tasks = this.tasks.map(task => {
+            if (task.id === id) {
                 return { ...task, completed: !task.completed };
             }
             return task;
         });
-        
-        saveTasks();
-        renderTasks();
-        updateStats();
+        this.saveTasks();
+        this.render();
     }
-    
-    // Excluir tarefa
-    function deleteTask(taskId) {
-        if (!confirm('Tem certeza que deseja excluir esta tarefa?')) {
+
+    deleteTask(id) {
+        if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+            this.tasks = this.tasks.filter(task => task.id !== id);
+            this.saveTasks();
+            this.render();
+        }
+    }
+
+    clearCompleted() {
+        const completedTasks = this.tasks.filter(task => task.completed);
+        
+        if (completedTasks.length === 0) {
+            alert('Não há tarefas concluídas para limpar!');
             return;
         }
-        
-        tasks = tasks.filter(task => task.id !== taskId);
-        saveTasks();
-        renderTasks();
-        updateStats();
-        
-        showAlert('Tarefa excluída com sucesso!', 'success');
-    }
-    
-    // Editar tarefa (feature extra)
-    function editTask(taskId) {
-        const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
-        
-        const newText = prompt('Editar tarefa:', task.text);
-        if (newText !== null && newText.trim() !== '') {
-            if (newText.trim().length > 100) {
-                showAlert('A tarefa deve ter no máximo 100 caracteres!', 'warning');
-                return;
-            }
-            
-            task.text = newText.trim();
-            saveTasks();
-            renderTasks();
-            showAlert('Tarefa atualizada com sucesso!', 'success');
+
+        if (confirm(`Deseja remover ${completedTasks.length} tarefa(s) concluída(s)?`)) {
+            this.tasks = this.tasks.filter(task => !task.completed);
+            this.saveTasks();
+            this.render();
         }
     }
-    
-    // Limpar tarefas concluídas
-    function clearCompletedTasks() {
-        const completedCount = tasks.filter(task => task.completed).length;
+
+    setFilter(filter) {
+        this.currentFilter = filter;
         
-        if (completedCount === 0) {
-            showAlert('Não há tarefas concluídas para limpar!', 'info');
-            return;
-        }
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
         
-        if (!confirm(`Tem certeza que deseja limpar ${completedCount} tarefa(s) concluída(s)?`)) {
-            return;
-        }
+        document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
         
-        tasks = tasks.filter(task => !task.completed);
-        saveTasks();
-        renderTasks();
-        updateStats();
-        
-        showAlert(`${completedCount} tarefa(s) concluída(s) foram removidas!`, 'success');
+        this.render();
     }
-    
-    // Limpar todas as tarefas
-    function clearAllTasks() {
-        if (tasks.length === 0) {
-            showAlert('Não há tarefas para limpar!', 'info');
-            return;
+
+    getFilteredTasks() {
+        switch (this.currentFilter) {
+            case 'pending':
+                return this.tasks.filter(task => !task.completed);
+            case 'completed':
+                return this.tasks.filter(task => task.completed);
+            default:
+                return this.tasks;
         }
-        
-        if (!confirm('Tem certeza que deseja limpar TODAS as tarefas? Esta ação não pode ser desfeita!')) {
-            return;
-        }
-        
-        tasks = [];
-        saveTasks();
-        renderTasks();
-        updateStats();
-        
-        showAlert('Todas as tarefas foram removidas!', 'success');
     }
-    
-    // Atualizar estatísticas
-    function updateStats() {
-        const total = tasks.length;
-        const completed = tasks.filter(task => task.completed).length;
+
+    render() {
+        const taskList = document.getElementById('taskList');
+        const taskCount = document.getElementById('taskCount');
+        const clearButton = document.getElementById('clearCompleted');
+
+        const filteredTasks = this.getFilteredTasks();
         
-        totalTasksElement.textContent = `Total: ${total}`;
-        completedTasksElement.textContent = `Concluídas: ${completed}`;
+        taskList.innerHTML = filteredTasks.map(task => `
+            <li class="task-item ${task.completed ? 'completed' : ''}">
+                <input 
+                    type="checkbox" 
+                    class="task-checkbox" 
+                    ${task.completed ? 'checked' : ''}
+                    onchange="todoApp.toggleTask(${task.id})"
+                >
+                <span class="task-text">${this.escapeHtml(task.text)}</span>
+                <button class="delete-btn" onclick="todoApp.deleteTask(${task.id})">
+                    Excluir
+                </button>
+            </li>
+        `).join('');
+
+        const pendingTasks = this.tasks.filter(task => !task.completed).length;
+        const totalTasks = this.tasks.length;
+
+        taskCount.textContent = `${pendingTasks} de ${totalTasks} tarefas pendentes`;
+        
+        clearButton.disabled = this.tasks.filter(task => task.completed).length === 0;
     }
-    
-    // Salvar tarefas no localStorage
-    function saveTasks() {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
-    
-    // Mostrar alerta
-    function showAlert(message, type = 'info') {
-        // Remove alertas anteriores
-        const existingAlert = document.querySelector('.alert');
-        if (existingAlert) {
-            existingAlert.remove();
-        }
-        
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type}`;
-        alert.textContent = message;
-        alert.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1000;
-            animation: slideInRight 0.3s ease;
-            max-width: 300px;
-        `;
-        
-        // Cores baseadas no tipo
-        const colors = {
-            success: '#28a745',
-            warning: '#ffc107',
-            danger: '#dc3545',
-            info: '#17a2b8'
-        };
-        
-        alert.style.background = colors[type] || colors.info;
-        
-        document.body.appendChild(alert);
-        
-        // Auto-remover após 3 segundos
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => alert.remove(), 300);
-            }
-        }, 3000);
-    }
-    
-    // Utility: Escapar HTML para prevenir XSS
-    function escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-    
-    // Event Listeners
-    addTaskBtn.addEventListener('click', addTask);
-    
-    taskInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            addTask();
-        }
-    });
-    
-    clearCompletedBtn.addEventListener('click', clearCompletedTasks);
-    clearAllBtn.addEventListener('click', clearAllTasks);
-    
-    // Focar no input quando a página carregar
-    taskInput.focus();
-    
-    // Inicializar a aplicação
-    init();
-    
-    // Adicionar estilos para animações dos alertas
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-});
+}
+
+const todoApp = new TodoApp();
