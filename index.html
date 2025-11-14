@@ -8,47 +8,27 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📝 To-Do Lister</h1>
-            <p>Organize suas tarefas de forma simples</p>
-        </header>
-
+        <h1>Lista de Tarefas</h1>
+        
         <div class="input-section">
-            <input 
-                type="text" 
-                id="taskInput" 
-                placeholder="Digite uma nova tarefa..."
-                onkeypress="handleKeyPress(event)"
-            >
-            <button onclick="addTask()">Adicionar</button>
+            <input type="text" id="taskInput" placeholder="Digite uma nova tarefa...">
+            <button id="addTaskBtn">Adicionar Tarefa</button>
         </div>
 
-        <div class="filter-section">
-            <button class="filter-btn active" onclick="filterTasks('all')">Todas</button>
-            <button class="filter-btn" onclick="filterTasks('pending')">Pendentes</button>
-            <button class="filter-btn" onclick="filterTasks('completed')">Concluídas</button>
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Todas</button>
+            <button class="filter-btn" data-filter="pending">Pendentes</button>
+            <button class="filter-btn" data-filter="completed">Concluídas</button>
         </div>
 
-        <ul id="taskList" class="task-list">
-            <!-- Tarefas serão adicionadas aqui dinamicamente -->
-        </ul>
+        <ul id="taskList" class="task-list"></ul>
 
-        <div class="stats">
-            <span id="taskCount">Total: 0 tarefas</span>
-            <button onclick="clearCompleted()" class="clear-btn">Limpar Concluídas</button>
+        <div class="task-info">
+            <span id="taskCount">0 tarefas pendentes</span>
+            <button id="clearCompleted">Limpar Concluídas</button>
         </div>
     </div>
-<!-- BOTÃO DE ALTO CONTRASTE - ADICIONE ISSO -->
-<button id="highContrastBtn" class="contrast-btn" 
-        onclick="toggleHighContrast()" 
-        aria-label="Ativar modo de alto contraste para melhor visibilidade">
-    🌙 Alto Contraste
-</button>
 
-<!-- FEEDBACK PARA LEITOR DE TELA - ADICIONE ISSO -->
-<div id="ariaAnnouncer" aria-live="polite" aria-atomic="true" 
-     style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;">
-</div>
     <script src="script.js"></script>
 </body>
 </html>
