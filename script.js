@@ -1,243 +1,159 @@
-// Variáveis globais
-let currentFilter = 'all';
-
-// Inicializar a aplicação
-document.addEventListener('DOMContentLoaded', function() {
-    loadTasks();
-    updateTaskCount();
-});
-
-// Adicionar nova tarefa
-function addTask() {
-    const taskInput = document.getElementById('taskInput');
-    const taskText = taskInput.value.trim();
-    
-    if (taskText === '') {
-        alert('Por favor, digite uma tarefa!');
-        return;
+class TodoApp {
+    constructor() {
+        this.tasks = this.loadTasks();
+        this.currentFilter = 'all';
+        this.init();
     }
-    
-    const taskList = document.getElementById('taskList');
-    const li = document.createElement('li');
-    const timestamp = new Date().toLocaleString();
-    
-    li.innerHTML = `
-        <span>${taskText}</span>
-        <small class="task-time">${timestamp}</small>
-        <div class="task-actions">
-            <button class="complete-btn" onclick="toggleComplete(this)">✓</button>
-            <button class="delete-btn" onclick="deleteTask(this)">✕</button>
-        </div>
-    `;
-    
-    taskList.appendChild(li);
-    taskInput.value = '';
-    saveTasks();
-    updateTaskCount();
-    
-    // Aplicar filtro atual
-    applyFilter(li, currentFilter);
-}
 
-// Adicionar tarefa com Enter
-function handleKeyPress(event) {
-    if (event.key === 'Enter') {
-        addTask();
+    init() {
+        this.bindEvents();
+        this.render();
     }
-}
 
-// Alternar estado de conclusão
-function toggleComplete(button) {
-    const li = button.closest('li');
-    li.classList.toggle('completed');
-    saveTasks();
-    updateTaskCount();
-    
-    // Reaplicar filtro se necessário
-    if (currentFilter !== 'all') {
-        applyFilter(li, currentFilter);
+    loadTasks() {
+        const saved = localStorage.getItem('todoTasks');
+        return saved ? JSON.parse(saved) : [];
     }
-}
 
-// Excluir tarefa
-function deleteTask(button) {
-    const li = button.closest('li');
-    li.style.animation = 'fadeOut 0.3s ease';
-    
-    setTimeout(() => {
-        li.remove();
-        saveTasks();
-        updateTaskCount();
-    }, 300);
-}
-
-// Filtrar tarefas
-function filterTasks(filter) {
-    currentFilter = filter;
-    
-    // Atualizar botões de filtro
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Aplicar filtro a todas as tarefas
-    const tasks = document.querySelectorAll('#taskList li');
-    tasks.forEach(task => {
-        applyFilter(task, filter);
-    });
-}
-
-// Aplicar filtro individual
-function applyFilter(task, filter) {
-    const isCompleted = task.classList.contains('completed');
-    
-    switch (filter) {
-        case 'all':
-            task.style.display = 'flex';
-            break;
-        case 'pending':
-            task.style.display = isCompleted ? 'none' : 'flex';
-            break;
-        case 'completed':
-            task.style.display = isCompleted ? 'flex' : 'none';
-            break;
+    saveTasks() {
+        localStorage.setItem('todoTasks', JSON.stringify(this.tasks));
     }
-}
 
-// Limpar tarefas concluídas
-function clearCompleted() {
-    const completedTasks = document.querySelectorAll('#taskList li.completed');
-    
-    if (completedTasks.length === 0) {
-        alert('Não há tarefas concluídas para limpar!');
-        return;
-    }
-    
-    if (confirm(`Deseja limpar ${completedTasks.length} tarefa(s) concluída(s)?`)) {
-        completedTasks.forEach(task => {
-            task.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => task.remove(), 300);
-        });
+    bindEvents() {
+        const addButton = document.getElementById('addTaskBtn');
+        const taskInput = document.getElementById('taskInput');
+        const clearButton = document.getElementById('clearCompleted');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        addButton.addEventListener('click', () => this.addTask());
         
-        setTimeout(() => {
-            saveTasks();
-            updateTaskCount();
-        }, 400);
-    }
-}
-
-// Salvar tarefas no localStorage
-function saveTasks() {
-    const tasks = [];
-    document.querySelectorAll('#taskList li').forEach(li => {
-        tasks.push({
-            text: li.querySelector('span').textContent,
-            time: li.querySelector('.task-time')?.textContent || new Date().toLocaleString(),
-            completed: li.classList.contains('completed')
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addTask();
         });
-    });
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-}
 
-// Carregar tarefas do localStorage
-function loadTasks() {
-    const savedTasks = localStorage.getItem('tasks');
-    if (savedTasks) {
-        const tasks = JSON.parse(savedTasks);
-        const taskList = document.getElementById('taskList');
-        
-        tasks.forEach(task => {
-            const li = document.createElement('li');
-            if (task.completed) {
-                li.classList.add('completed');
+        clearButton.addEventListener('click', () => this.clearCompleted());
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.setFilter(e.target.dataset.filter);
+            });
+        });
+    }
+
+    addTask() {
+        const input = document.getElementById('taskInput');
+        const text = input.value.trim();
+
+        if (text === '') {
+            alert('Por favor, digite uma tarefa!');
+            return;
+        }
+
+        const newTask = {
+            id: Date.now(),
+            text: text,
+            completed: false,
+            createdAt: new Date().toISOString()
+        };
+
+        this.tasks.push(newTask);
+        input.value = '';
+        this.saveTasks();
+        this.render();
+    }
+
+    toggleTask(id) {
+        this.tasks = this.tasks.map(task => {
+            if (task.id === id) {
+                return { ...task, completed: !task.completed };
             }
-            
-            li.innerHTML = `
-                <span>${task.text}</span>
-                <small class="task-time">${task.time}</small>
-                <div class="task-actions">
-                    <button class="complete-btn" onclick="toggleComplete(this)">✓</button>
-                    <button class="delete-btn" onclick="deleteTask(this)">✕</button>
-                </div>
-            `;
-            
-            taskList.appendChild(li);
+            return task;
         });
+        this.saveTasks();
+        this.render();
     }
-}
 
-// Atualizar contador de tarefas
-function updateTaskCount() {
-    const totalTasks = document.querySelectorAll('#taskList li').length;
-    const completedTasks = document.querySelectorAll('#taskList li.completed').length;
-    const pendingTasks = totalTasks - completedTasks;
-    
-    const taskCount = document.getElementById('taskCount');
-    taskCount.textContent = `Total: ${totalTasks} | Pendentes: ${pendingTasks} | Concluídas: ${completedTasks}`;
-}
-
-// Adicionar animação de fadeOut
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(-100px); }
-    }
-`;
-document.head.appendChild(style);
-// ====== FUNÇÕES DE ACESSIBILIDADE ======
-
-// 1. TOGGLE ALTO CONTRASTE
-function toggleHighContrast() {
-    document.body.classList.toggle('high-contrast');
-    const isActive = document.body.classList.contains('high-contrast');
-    
-    // Salvar preferência
-    localStorage.setItem('highContrast', isActive);
-    
-    // Feedback visual
-    const btn = document.getElementById('highContrastBtn');
-    btn.textContent = isActive ? '☀️ Contraste Normal' : '🌙 Alto Contraste';
-    btn.setAttribute('aria-label', 
-        isActive ? 'Desativar modo alto contraste' : 'Ativar modo alto contraste');
-    
-    // Anunciar para leitores de tela
-    announceToScreenReader(
-        isActive ? 'Modo alto contraste ativado' : 'Modo alto contraste desativado'
-    );
-}
-
-// 2. ANUNCIAR PARA LEITOR DE TELA
-function announceToScreenReader(message) {
-    const announcer = document.getElementById('ariaAnnouncer');
-    if (announcer) {
-        announcer.textContent = message;
-    }
-}
-
-// 3. CARREGAR PREFERÊNCIA SALVA
-function loadAccessibilityPreferences() {
-    const highContrast = localStorage.getItem('highContrast') === 'true';
-    if (highContrast) {
-        document.body.classList.add('high-contrast');
-        const btn = document.getElementById('highContrastBtn');
-        if (btn) {
-            btn.textContent = '☀️ Contraste Normal';
-            btn.setAttribute('aria-label', 'Desativar modo alto contraste');
+    deleteTask(id) {
+        if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+            this.tasks = this.tasks.filter(task => task.id !== id);
+            this.saveTasks();
+            this.render();
         }
     }
+
+    clearCompleted() {
+        const completedTasks = this.tasks.filter(task => task.completed);
+        
+        if (completedTasks.length === 0) {
+            alert('Não há tarefas concluídas para limpar!');
+            return;
+        }
+
+        if (confirm(`Deseja remover ${completedTasks.length} tarefa(s) concluída(s)?`)) {
+            this.tasks = this.tasks.filter(task => !task.completed);
+            this.saveTasks();
+            this.render();
+        }
+    }
+
+    setFilter(filter) {
+        this.currentFilter = filter;
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+        
+        this.render();
+    }
+
+    getFilteredTasks() {
+        switch (this.currentFilter) {
+            case 'pending':
+                return this.tasks.filter(task => !task.completed);
+            case 'completed':
+                return this.tasks.filter(task => task.completed);
+            default:
+                return this.tasks;
+        }
+    }
+
+    render() {
+        const taskList = document.getElementById('taskList');
+        const taskCount = document.getElementById('taskCount');
+        const clearButton = document.getElementById('clearCompleted');
+
+        const filteredTasks = this.getFilteredTasks();
+        
+        taskList.innerHTML = filteredTasks.map(task => `
+            <li class="task-item ${task.completed ? 'completed' : ''}">
+                <input 
+                    type="checkbox" 
+                    class="task-checkbox" 
+                    ${task.completed ? 'checked' : ''}
+                    onchange="todoApp.toggleTask(${task.id})"
+                >
+                <span class="task-text">${this.escapeHtml(task.text)}</span>
+                <button class="delete-btn" onclick="todoApp.deleteTask(${task.id})">
+                    Excluir
+                </button>
+            </li>
+        `).join('');
+
+        const pendingTasks = this.tasks.filter(task => !task.completed).length;
+        const totalTasks = this.tasks.length;
+
+        taskCount.textContent = `${pendingTasks} de ${totalTasks} tarefas pendentes`;
+        
+        clearButton.disabled = this.tasks.filter(task => task.completed).length === 0;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 }
 
-// 4. INICIALIZAR AO CARREGAR A PÁGINA
-document.addEventListener('DOMContentLoaded', function() {
-    loadAccessibilityPreferences();
-});
-
-// 5. MELHORAR NAVEGAÇÃO POR TECLADO
-document.addEventListener('keydown', function(e) {
-    // Tecla ESC para limpar foco
-    if (e.key === 'Escape') {
-        document.activeElement.blur();
-    }
-});
+const todoApp = new TodoApp();
