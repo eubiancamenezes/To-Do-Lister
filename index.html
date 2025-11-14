@@ -3,54 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do Lister - Organize suas tarefas</title>
+    <title>To-Do Lister</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📝 To-Do Lister</h1>
-            <p class="subtitle">Organize suas tarefas de forma simples e eficiente</p>
-        </header>
+        <h1>Lista de Tarefas</h1>
         
-        <main>
-            <div class="input-area">
-                <input 
-                    type="text" 
-                    id="taskInput" 
-                    placeholder="Digite sua tarefa..."
-                    aria-label="Digite sua tarefa"
-                    maxlength="100"
-                >
-                <button id="addTaskBtn" aria-label="Adicionar tarefa">
-                    ➕ Adicionar
-                </button>
-            </div>
-            
-            <div class="stats">
-                <span id="totalTasks">Total: 0</span>
-                <span id="completedTasks">Concluídas: 0</span>
-            </div>
-            
-            <ul id="taskList" aria-label="Lista de tarefas">
-                <!-- Tarefas serão adicionadas aqui dinamicamente -->
-            </ul>
-            
-            <div class="actions">
-                <button id="clearCompletedBtn">
-                    🗑️ Limpar Concluídas
-                </button>
-                <button id="clearAllBtn">
-                    🗑️ Limpar Todas
-                </button>
-            </div>
-        </main>
-        
-        <footer>
-            <p>✨ Foco e produtividade!</p>
-        </footer>
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="Digite uma nova tarefa...">
+            <button id="addTaskBtn">Adicionar Tarefa</button>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Todas</button>
+            <button class="filter-btn" data-filter="pending">Pendentes</button>
+            <button class="filter-btn" data-filter="completed">Concluídas</button>
+        </div>
+
+        <ul id="taskList" class="task-list"></ul>
+
+        <div class="task-info">
+            <span id="taskCount">0 tarefas pendentes</span>
+            <button id="clearCompleted">Limpar Concluídas</button>
+        </div>
     </div>
-    
+
     <script src="script.js"></script>
 </body>
 </html>
