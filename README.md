@@ -1,25 +1,23 @@
 # 📝 To-Do Lister
 
-Um aplicativo de lista de tarefas simples e elegante, desenvolvido com HTML, CSS e JavaScript.
+Uma aplicação web moderna e responsiva para gerenciamento de tarefas, desenvolvida com HTML, CSS e JavaScript puro.
 
 ## ✨ Funcionalidades
 
 - ✅ Adicionar novas tarefas
-- ✅ Marcar tarefas como concluídas
-- ✅ Excluir tarefas
-- ✅ Filtrar tarefas (Todas, Pendentes, Concluídas)
-- ✅ Salvar tarefas localmente (localStorage)
-- ✅ Contador de tarefas
-- ✅ Design responsivo
-- ✅ Animações suaves
+- ✅ Marcar/desmarcar tarefas como concluídas
+- ✅ Excluir tarefas individualmente
+- 📊 Estatísticas em tempo real (total e concluídas)
+- 🗑️ Limpar tarefas concluídas
+- 🗑️ Limpar todas as tarefas
+- 💾 Salvamento automático no localStorage
+- 📱 Design totalmente responsivo
+- 🎨 Interface moderna e intuitiva
+- ⚡ Animações e feedback visual
+- ✏️ Edição por duplo clique (feature extra)
 
 ## 🚀 Como Usar
 
-1. **Online**: Acesse [https://eubiancamenezes.github.io/To-Do-Lister/](https://eubiancamenezes.github.io/To-Do-Lister/)
-
-2. **Localmente**:
+1. **Clone o repositório:**
    ```bash
-   # Clone o repositório
    git clone https://github.com/eubiancamenezes/To-Do-Lister.git
-   
-   # Abra o arquivo index.html no navegador
