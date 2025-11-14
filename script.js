@@ -157,3 +157,61 @@ class TodoApp {
 }
 
 const todoApp = new TodoApp();
+// ====== ACESSIBILIDADE ======
+
+// 1. TOGGLE ALTO CONTRASTE
+function toggleHighContrast() {
+    const body = document.body;
+    const btn = document.getElementById('highContrastBtn');
+    
+    body.classList.toggle('high-contrast');
+    const isActive = body.classList.contains('high-contrast');
+    
+    // Salvar preferência do usuário
+    localStorage.setItem('highContrast', isActive);
+    
+    // Atualizar botão
+    if (isActive) {
+        btn.textContent = '☀️ Normal';
+        btn.setAttribute('aria-label', 'Desativar modo alto contraste');
+        announceToScreenReader('Modo alto contraste ativado');
+    } else {
+        btn.textContent = '🌙 Alto Contraste';
+        btn.setAttribute('aria-label', 'Ativar modo alto contraste');
+        announceToScreenReader('Modo alto contraste desativado');
+    }
+}
+
+// 2. ANUNCIAR PARA LEITOR DE TELA
+function announceToScreenReader(message) {
+    const announcer = document.getElementById('ariaAnnouncer');
+    if (announcer) {
+        announcer.textContent = message;
+    }
+}
+
+// 3. CARREGAR PREFERÊNCIAS SALVAS
+function loadAccessibilityPreferences() {
+    const highContrast = localStorage.getItem('highContrast') === 'true';
+    if (highContrast) {
+        document.body.classList.add('high-contrast');
+        const btn = document.getElementById('highContrastBtn');
+        if (btn) {
+            btn.textContent = '☀️ Normal';
+            btn.setAttribute('aria-label', 'Desativar modo alto contraste');
+        }
+    }
+}
+
+// 4. NAVEGAÇÃO POR TECLADO - TECLA ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.activeElement.blur();
+        announceToScreenReader('Saindo do elemento');
+    }
+});
+
+// 5. INICIALIZAR ACESSIBILIDADE QUANDO PÁGINA CARREGAR
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccessibilityPreferences();
+});
