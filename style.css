@@ -156,3 +156,58 @@ h1 {
     background: #ccc;
     cursor: not-allowed;
 }
+/* ====== MODO ALTO CONTRASTE ====== */
+.high-contrast {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+.high-contrast .container {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffff00 !important;
+}
+
+.high-contrast .task-item {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffff00 !important;
+}
+
+.high-contrast input, 
+.high-contrast button {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffff00 !important;
+}
+
+.high-contrast button:hover {
+    background: #333333 !important;
+    color: #ffff00 !important;
+}
+
+/* BOTÃO DE CONTRASTE */
+.contrast-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    padding: 8px 15px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.contrast-btn:hover {
+    background: #34495e;
+    transform: scale(1.05);
+}
+
+/* MELHORIAS DE FOCO PARA TECLADO */
+button:focus, input:focus, select:focus {
+    outline: 3px solid #0066cc !important;
+    outline-offset: 2px !important;
+}
