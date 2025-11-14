@@ -38,7 +38,17 @@
             <button onclick="clearCompleted()" class="clear-btn">Limpar Concluídas</button>
         </div>
     </div>
+<!-- BOTÃO DE ALTO CONTRASTE - ADICIONE ISSO -->
+<button id="highContrastBtn" class="contrast-btn" 
+        onclick="toggleHighContrast()" 
+        aria-label="Ativar modo de alto contraste para melhor visibilidade">
+    🌙 Alto Contraste
+</button>
 
+<!-- FEEDBACK PARA LEITOR DE TELA - ADICIONE ISSO -->
+<div id="ariaAnnouncer" aria-live="polite" aria-atomic="true" 
+     style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;">
+</div>
     <script src="script.js"></script>
 </body>
 </html>
