@@ -186,3 +186,58 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+// ====== FUNÇÕES DE ACESSIBILIDADE ======
+
+// 1. TOGGLE ALTO CONTRASTE
+function toggleHighContrast() {
+    document.body.classList.toggle('high-contrast');
+    const isActive = document.body.classList.contains('high-contrast');
+    
+    // Salvar preferência
+    localStorage.setItem('highContrast', isActive);
+    
+    // Feedback visual
+    const btn = document.getElementById('highContrastBtn');
+    btn.textContent = isActive ? '☀️ Contraste Normal' : '🌙 Alto Contraste';
+    btn.setAttribute('aria-label', 
+        isActive ? 'Desativar modo alto contraste' : 'Ativar modo alto contraste');
+    
+    // Anunciar para leitores de tela
+    announceToScreenReader(
+        isActive ? 'Modo alto contraste ativado' : 'Modo alto contraste desativado'
+    );
+}
+
+// 2. ANUNCIAR PARA LEITOR DE TELA
+function announceToScreenReader(message) {
+    const announcer = document.getElementById('ariaAnnouncer');
+    if (announcer) {
+        announcer.textContent = message;
+    }
+}
+
+// 3. CARREGAR PREFERÊNCIA SALVA
+function loadAccessibilityPreferences() {
+    const highContrast = localStorage.getItem('highContrast') === 'true';
+    if (highContrast) {
+        document.body.classList.add('high-contrast');
+        const btn = document.getElementById('highContrastBtn');
+        if (btn) {
+            btn.textContent = '☀️ Contraste Normal';
+            btn.setAttribute('aria-label', 'Desativar modo alto contraste');
+        }
+    }
+}
+
+// 4. INICIALIZAR AO CARREGAR A PÁGINA
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccessibilityPreferences();
+});
+
+// 5. MELHORAR NAVEGAÇÃO POR TECLADO
+document.addEventListener('keydown', function(e) {
+    // Tecla ESC para limpar foco
+    if (e.key === 'Escape') {
+        document.activeElement.blur();
+    }
+});
